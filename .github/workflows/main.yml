@@ -1,0 +1,43 @@
+
+name: Gerar APK Android
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "*.zip"
+      - ".github/workflows/main.yml"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Baixar projeto
+        uses: actions/checkout@v4
+
+      - name: Preparar Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Preparar Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Extrair projeto
+        run: |
+          mkdir projeto
+          unzip -q "$(find . -maxdepth 1 -name '*.zip' -print -quit)" -d projeto
+          echo "PROJECT_DIR=$(dirname "$(find projeto -name settings.gradle -print -quit)")" >> "$GITHUB_ENV"
+
+      - name: Compilar APK
+        run: |
+          cd "$PROJECT_DIR"
+          gradle assembleDebug
+
+      - name: Guardar APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: SensiFFGenerator-APK
+          path: projeto/**/app/build/outputs/apk/debug/*.apk
